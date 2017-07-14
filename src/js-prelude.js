@@ -1,19 +1,8 @@
-import Arrays from './main/Arrays';
-import Config from './main/Config';
-import ConfigError from './main/ConfigError';
-import Functions from './main/Functions';
-import Objects from './main/Objects';
-import Seq from './main/Seq';
-import Strings from './main/Strings';
-import Types from './main/Types'
-
-export {
-    Arrays,
-    Config,
-    ConfigError,
-    Functions,
-    Objects,
-    Seq,
-    Strings,
-    Types
-};
+export { default as Arrays } from './main/Arrays';
+export { default as Config } from './main/Config';
+export { default as ConfigError } from './main/ConfigError';
+export { default as Functions } from './main/Functions';
+export { default as Objects } from './main/Objects';
+export { default as Seq } from './main/Seq';
+export { default as Strings } from './main/Strings';
+export { default as Types } from './main/Types'
