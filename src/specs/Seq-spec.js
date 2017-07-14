@@ -1,5 +1,3 @@
-'use strict';
-
 import {describe, it} from 'mocha';
 import {expect} from 'chai';
 import Seq from '../../src/main/Seq';

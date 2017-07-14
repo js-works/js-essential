@@ -1,6 +1,3 @@
-'use strict';
-
-
 export default class Types {
     /**
      * Will throw exception if someone tries to instantiate this utility class.

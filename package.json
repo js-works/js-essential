@@ -1,6 +1,6 @@
 {
   "name": "js-prelude",
-  "version": "0.1.41",
+  "version": "0.1.43",
   "license": "LGPL-3.0",
   "homepage": "https://github.com/js-works/js-prelude",
   "main": "dist/js-prelude/js-prelude.min.js",

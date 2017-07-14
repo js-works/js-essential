@@ -1,5 +1,3 @@
-'use strict';
-
 const
     GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor;
 

@@ -1,5 +1,3 @@
-'use strict';
-
 import ConfigError from './ConfigError';
 import Strings from './Strings';
 import Seq from './Seq';

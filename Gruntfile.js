@@ -64,8 +64,10 @@ module.exports = function (grunt) {
                 src: 'build/src/js-prelude.js',
                 dest: 'dist/v<%= pkg.version %>/js-prelude-<%= pkg.version %>.js',
                 
-                browserifyOptions: {
-                    standalone: 'jsPrelude'
+                options: {
+                    browserifyOptions: {
+                        standalone: 'jsPrelude'
+                    }
                 }
             }
         },

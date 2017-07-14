@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Class as representation of a lazy sequences
  *

@@ -1,5 +1,3 @@
-'use strict';
-
 export default class Strings {
     /**
      * Will throw exception if someone tries to instantiate this utility class.
