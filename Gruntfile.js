@@ -12,8 +12,14 @@ module.exports = function (grunt) {
                 retainLines: true,
                 moduleIds: false,
                 sourceMap: true,
-                presets: ['es2015']
-                //optional: ['runtime']
+                presets: ['es2015'],
+                plugins: [[
+                    'transform-runtime', {
+                        helpers: false,
+                        polyfill: false,
+                        regenerator: true,
+                        moduleName: 'babel-runtime'
+                    }]]
             },
             dist: {
                 files: [{
