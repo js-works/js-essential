@@ -8,7 +8,7 @@ module.exports = function (grunt) {
         },
         babel: {
             options: {
-                //modules: 'common',
+                moduleId: 'jsPrelude',
                 retainLines: true,
                 moduleIds: false,
                 sourceMap: true,
@@ -56,7 +56,11 @@ module.exports = function (grunt) {
         browserify: {
             js: {
                 src: 'build/src/js-prelude.js',
-                dest: 'dist/v<%= pkg.version %>/js-prelude-<%= pkg.version %>.js'
+                dest: 'dist/v<%= pkg.version %>/js-prelude-<%= pkg.version %>.js',
+                
+                browserifyOptions: {
+                    standalone: 'jsPrelude'
+                }
             }
         },
         uglify: {

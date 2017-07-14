@@ -17,26 +17,3 @@ export {
     Strings,
     Types
 };
-
-const jsprelude = {
-    Arrays,
-    Config,
-    ConfigError,
-    Functions,
-    Objects,
-    Seq,
-    Strings,
-    Types
-};
-
-if (typeof define === 'function' && define.amd) {
-    define(() => jsprelude);
-}
-
-if (typeof exports === 'object' && typeof module !== 'undefined') {
-    module.exports = jsprelude;
-}
-
-if (typeof window === 'object' && window) {
-    window.jsprelude = jsprelude;
-}

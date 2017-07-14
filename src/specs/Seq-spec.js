@@ -92,7 +92,7 @@ describe('Testing static factory method Seq.from', () => {
 
     it('should return an empty seq if the input is not seqable', () =>
         [undefined, null, true, false, {prop: 42}].forEach(value =>
-                expect(Seq.from(value).count()).to.be.zero)
+                expect(Seq.from(value).count()).to.eql(0))
     );
 });
 
