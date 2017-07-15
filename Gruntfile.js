@@ -40,7 +40,7 @@ module.exports = function (grunt) {
                     ],
                     bail: true
                 },
-                src: ['build/src/specs/**/*.js']
+                src: ['build/src/test/**/*.js']
             }
         },
         esdoc : {
@@ -53,8 +53,8 @@ module.exports = function (grunt) {
 
                     test: {
                         type: 'mocha',
-                        source: './src/specs',
-                        includes: ['\\-spec.js']
+                        source: './src/test',
+                        includes: ['\\Test.js']
                     }
                 }
             }
