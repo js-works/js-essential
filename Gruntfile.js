@@ -8,7 +8,7 @@ module.exports = function (grunt) {
         },
         babel: {
             options: {
-                moduleId: 'jsUtility',
+                moduleId: 'jsEssential',
                 retainLines: true,
                 moduleIds: false,
                 sourceMap: true,
@@ -48,7 +48,7 @@ module.exports = function (grunt) {
                 options: {
                     source: 'src/main/',
                     destination: 'dist/v<%= pkg.version %>/docs/api',
-                    title: 'js-utility',
+                    title: 'js-essential',
                     undocumentIdentifier: true,
 
                     test: {
@@ -61,12 +61,12 @@ module.exports = function (grunt) {
         },
         browserify: {
             js: {
-                src: 'build/src/js-utility.js',
-                dest: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.js',
+                src: 'build/src/js-essential.js',
+                dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js',
                 
                 options: {
                     browserifyOptions: {
-                        standalone: 'jsUtility'
+                        standalone: 'jsEssential'
                     }
                 }
             }
@@ -82,8 +82,8 @@ module.exports = function (grunt) {
                         + '*/\n'
             },
             js: {
-                src: ['dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.js'],
-                dest: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.min.js'
+                src: ['dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js'],
+                dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js'
             }
         },
         compress: {
@@ -93,8 +93,8 @@ module.exports = function (grunt) {
                     level: 9
                 },
                 files: [{
-                    src: ['dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.min.js'],
-                    dest: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.min.js.gz'
+                    src: ['dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js'],
+                    dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js.gz'
                 }, {
                     src: ['node_modules/babel-polyfill/dist/polyfill.min.js'],
                     dest: 'dist/v<%= pkg.version %>/polyfill.min.js.gz'
@@ -102,17 +102,17 @@ module.exports = function (grunt) {
             }
         },
         copy: {
-            jsUtility1: {
-                src: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.js',
-                dest: 'dist/js-utility/js-utility.js'
+            jsEssential1: {
+                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js',
+                dest: 'dist/js-essential/js-essential.js'
             },
-            jsUtility2: {
-                src: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.min.js',
-                dest: 'dist/js-utility/js-utility.min.js'
+            jsEssential2: {
+                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js',
+                dest: 'dist/js-essential/js-essential.min.js'
             },
-            jsUtility3: {
-                src: 'dist/v<%= pkg.version %>/js-utility-<%= pkg.version %>.min.js.gz',
-                dest: 'dist/js-utility/js-utility.min.js.gz'
+            jsEssential3: {
+                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js.gz',
+                dest: 'dist/js-essential/js-essential.min.js.gz'
             },
             polyfill1: {
                 src: 'node_modules/babel-polyfill/dist/polyfill.min.js',
@@ -120,16 +120,16 @@ module.exports = function (grunt) {
             },
             polyfill2: {
                 src: 'node_modules/babel-polyfill/dist/polyfill.min.js',
-                dest: 'dist/js-utility/polyfill.min.js'
+                dest: 'dist/js-essential/polyfill.min.js'
             },
             polyfill3: {
                 src: 'dist/v<%= pkg.version %>/polyfill.min.js.gz',
-                dest: 'dist/js-utility/polyfill.min.js.gz'
+                dest: 'dist/js-essential/polyfill.min.js.gz'
             },
             docs: {
                 cwd: 'dist/v<%= pkg.version %>/docs',
                 src: '**',
-                dest: 'dist/js-utility/docs/',
+                dest: 'dist/js-essential/docs/',
                 expand: true
             }
         },

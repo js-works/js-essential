@@ -1,8 +1,8 @@
-## js-utility 
+## js-essential 
 
 Note: This library is in alpha status. Do not use it in production yet.
 
-"js-utility" is a small JavaScript library providing a bunch of useful classes
+"js-essential" is a small JavaScript library providing a bunch of useful classes
 to make daily JavaScript programming a bit more enjoyable.
 This toolkit tries to observe the YAGNI principle ("You ain't gonna need it").
 Means, that new features will only be added by the author as soon as he
@@ -14,7 +14,7 @@ Additional non-basic functionality will be provided in other projects,
 not in this one.
 
 
-### Current features of "js-utility" 
+### Current features of "js-essential" 
 
 - *Class "Seq"*:<br/>
   This class allows to iterate over collections and other iterable things
@@ -51,12 +51,12 @@ not in this one.
 
 ### JavaScript support
 
-"js-utility" will support all ECMAScript 5 JavaScript engines, in particular all
+"js-essential" will support all ECMAScript 5 JavaScript engines, in particular all
 modern browsers (IE >= 10) and server-side Node.
 
 ### Further information
 
-For more information please refer to the "js-utility" API documentation.<br/>
+For more information please refer to the "js-essential" API documentation.<br/>
 There you'll find detailed description of the available classes
 and methods.<br/>
 The API documentation also enables to have a direct look into main source code and
