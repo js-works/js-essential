@@ -1,4 +1,5 @@
 /boxroom
+/package-lock.json
 /*.log
 /.project
 /.idea

@@ -1,6 +1,8 @@
 /**
  * Class as representation of a lazy sequences
  *
+ * License: Public Domain
+ * 
  * @class Seq
  */
 export default class Seq {
@@ -243,7 +245,6 @@ export default class Seq {
         return Seq.from(items);
     }
 
-    // TODO: Handling of ClojureScript objects not really nice (still working)
     static from(items) {
         var ret;
 
@@ -251,15 +252,8 @@ export default class Seq {
             ret = items;
         } else if (items && typeof items[Symbol.iterator] === 'function') {
             ret = new Seq(() => items[Symbol.iterator]());
-        } else  if (items && items['cljs$core$ISeqable$_seq$arity$1'] && typeof cljs === 'object') {
-            let seq = cljs.core.seq(items);
-
-            ret = new Seq(function* () {
-                while (!cljs.core.empty_QMARK_(seq)) {
-                    yield cljs.core.first(seq);
-                    seq = cljs.core.rest(seq);
-                }
-            });
+        } else if (isGeneratorFunction(items)) {
+            ret =  new Seq(items);
         } else {
             ret = Seq.empty();
         }
@@ -324,11 +318,17 @@ export default class Seq {
     }
 
     static isSeqable(obj) {
-        return !!obj && (typeof obj[Symbol.iterator] === 'function'
-            || !!obj["cljs$core$ISeqable$_seq$arity$1"] && typeof cljs === 'object');
+        return !!obj && (typeof obj[Symbol.iterator] === 'function');
     }
 
     static isNonStringSeqable(obj) {
         return (typeof obj !== 'string' && !(obj instanceof String) && Seq.isSeqable(obj));
     }
 }
+
+function isGeneratorFunction(fn) {
+    return fn instanceof GeneratorFunction;
+}
+
+const
+    GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor;

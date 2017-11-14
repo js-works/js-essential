@@ -1,3 +1,5 @@
+// License: Public domain
+
 import {describe, it} from 'mocha';
 import {expect} from 'chai';
 import Seq from '../../src/main/Seq';
@@ -92,6 +94,16 @@ describe('Testing static factory method Seq.from', () => {
         [undefined, null, true, false, {prop: 42}].forEach(value =>
                 expect(Seq.from(value).count()).to.eql(0))
     );
+
+    it('should create a Seq from a generator function', () => {
+        const seq = Seq.from(function * () {
+            yield 1;
+            yield 2;
+            yield 3;
+        });
+
+        expect(seq.toArray()).to.eql([1, 2, 3]);
+    });
 });
 
 /**
