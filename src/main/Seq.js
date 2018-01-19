@@ -1,7 +1,17 @@
-// poor and simply Symbol polyfill
-if (typeof Symbol !== 'function' || !Symbol.iterator) {
+// poor but simple and small Symbol polyfill (only iterator key needed here)
+const symbolIsFaked = typeof Symbol !== 'function' || !Symbol.iterator;
+
+let originalSymbol = undefined;
+
+if (symbolIsFaked) {
+    if (typeof Symbol !== 'undefined') {
+        originalSymbol = Symbol;
+    }
+
     Symbol = { iterator: '@@iterator' };
 }
+
+const iteratorSymbol = Symbol.iterator;
 
 /**
  * Class as representation of a lazy sequences
@@ -282,8 +292,8 @@ export default class Seq {
 
                 return () => index < items.length ? items[index++] : endOfSeq;
             });
-        } else if (items && typeof items[Symbol.iterator] === 'function') {
-            let generator = items[Symbol.iterator];
+        } else if (items && typeof items[iteratorSymbol] === 'function') {
+            let generator = items[iteratorSymbol];
 
 
             ret = createSeq(() => {
@@ -304,8 +314,6 @@ export default class Seq {
 
                 return [next, doNothing];
             });
-        } else if (isGeneratorFunction(items)) {
-            ret = Seq.from({ [Symbol.iterator]: items });
         } else if (typeof items === 'function') {
             ret = createSeq(() => {
                 let
@@ -313,14 +321,36 @@ export default class Seq {
                     finalize = doNothing,
                     nextItems = null;
 
-                if (typeof generate === 'object') {
-                    if (generate.finalize !== undefined
-                        && generate.finalize !== null) {
-                        
-                        finalize = generate.finalize;
-                    }
+                if (generate && typeof generate === 'object') {
+                    if (typeof generate.generate === 'function') {
+                        if (generate.finalize !== undefined
+                            && generate.finalize !== null) {
+                            
+                            finalize = generate.finalize;
+                        }
 
-                    generate = generate.generate;
+                        generate = generate.generate;
+                    } else if (typeof generate.next === 'function') {
+                        let next = generate.next;
+
+                        if (next
+                            && typeof next === 'object'
+                            && typeof next._invoke === 'function') {
+
+                            next = next._invoke;
+                        } else {
+                            next = next.bind(generate);
+                        }
+
+                        generate = () => {
+                            // TODO: finalize
+                            const result = next();
+
+                            return !result || result.done
+                                ? null
+                                : [result.value];
+                        }
+                    }
                 }
 
                 if (typeof generate !== 'function'
@@ -373,41 +403,54 @@ export default class Seq {
     }
 
     static flatten(seqOfSeqs) {
-        return new Seq.from(function* () {
-            for (const seq of Seq.from(seqOfSeqs)) {
-                for (const item of Seq.from(seq)) {
-                    yield item;
-                }
-            }
-        });
-/*
         return createSeq(() => {
-            const [outerGenerate, outerFinalize] = iterate(this);
+            const [outerGenerate, outerFinalize] =
+                iterate(Seq.from(seqOfSeqs));
 
             let
-                outerSeq = null,
-                innerSeq = null,
+                innerGenerate = null,
+                innerFinalize = null;
 
             function next() {
-                if (outerSeq === null) {
-                    const outerItem = outerGenerate();
+                let innerResult = endOfSeq;
 
-                    if (outerItem === endOfSeq) {
-                        return endOfSeq;
+                while (innerResult === endOfSeq) {
+                    if (innerGenerate === null) {
+                        let outerResult = outerGenerate();
+                        
+                        if (outerResult === endOfSeq) {
+                            return endOfSeq;
+                        }
+
+                        [innerGenerate, innerFinalize] =
+                            iterate(Seq.from(outerResult));
                     }
-                   
-                    outerSeq = Seq.from(outerItem);
+
+                    innerResult = innerGenerate();
+
+                    if (innerResult === endOfSeq) {
+                        innerFinalize();
+
+                        innerGenerate = null;
+                        innerFinalize = null;
+                    }
                 }
 
-                if (innerSeq === null) {
-
-                }
-                
+                return innerResult;
             };
+
+            function finalize() {
+                if (innerFinalize) {
+                    innerFinalize();
+                }
+
+                if (outerFinalize) {
+                    outerFinalize();
+                }
+            }
 
             return [next, finalize];
         });
-*/
     }
 
     static iterate(initialValues, f) {
@@ -453,7 +496,7 @@ export default class Seq {
     }
 
     static isSeqable(obj) {
-        return !!obj && (typeof obj[Symbol.iterator] === 'function');
+        return !!obj && (typeof obj[iteratorSymbol] === 'function');
     }
 
     static isNonStringSeqable(obj) {
@@ -462,18 +505,18 @@ export default class Seq {
     }
 }
 
+// --- reset Symbol adjustment --------------------------------------
+if (symbolIsFaked) {
+    Symbol = originalSymbol;
+}
+
 // --- locals -------------------------------------------------------
 
 const
     endOfSeq = Object.freeze({}),
-    GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor,
     doNothing = () => {},
     endSequencing = () => endOfSeq,
     emptySeq = createSeq(() => [endSequencing, doNothing]);
-
-function isGeneratorFunction(fn) {
-    return fn instanceof GeneratorFunction;
-}
 
 function createSeq(generator) {
     const ret = Object.create(Seq.prototype);
