@@ -6,43 +6,6 @@ import Seq from '../../src/main/Seq';
 // import Seq from '../../src/main/Seq-generator-based';
 
 /**
- * @test {Seq}
- */
-describe('Testing constructor of Seq', () => {
-    it('should construct new Seqs from using generators', () =>
-        expect(Seq.from(function* () { yield 1; yield 2; yield 3; })
-                .toArray())
-                .to.eql([1, 2, 3])
-    );
-
-    it('should construct new Seqs using normal methods (variant 1)', () => {
-        const seq = Seq.from(() => {
-            let counter = 0;
-
-            return () => counter < 5 ? [counter, counter++] : null;
-        });
-
-        expect(seq.toArray()).to.eql([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    });
-
-    it('should construct new Seqs using normal methods (variant 2)', () => {
-        let isFinalized = false;
-
-        const seq = Seq.from(endOfSeq => {
-            let counter = 0;
-
-            return {
-                generate: () => counter < 5 ? [counter++] : null,
-                finalize: () => isFinalized = true
-            };
-        });
-
-        expect(seq.toArray()).to.eql([0, 1, 2, 3, 4]);
-        expect(isFinalized).to.equal(true);
-    });
-});
-
-/**
  * @test {Seq.empty}
  */
 describe('Testing static factory method Seq.empty', () => {
@@ -104,6 +67,32 @@ describe('Testing static factory method Seq.from', () => {
         });
 
         expect(seq.toArray()).to.eql([1, 2, 3]);
+    });
+    
+    it('should create a Seqs using non-generator iterators (variant 1)', () => {
+        const seq = Seq.from(() => {
+            let counter = 0;
+
+            return () => counter < 5 ? [counter, counter++] : null;
+        });
+
+        expect(seq.toArray()).to.eql([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    });
+
+    it('should create a Seqs using non-generator iterators (variant 2)', () => {
+        let isFinalized = false;
+
+        const seq = Seq.from(endOfSeq => {
+            let counter = 0;
+
+            return {
+                generate: () => counter < 5 ? [counter++] : null,
+                finalize: () => isFinalized = true
+            };
+        });
+
+        expect(seq.toArray()).to.eql([0, 1, 2, 3, 4]);
+        expect(isFinalized).to.equal(true);
     });
 });
 

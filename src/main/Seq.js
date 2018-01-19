@@ -1,4 +1,5 @@
-// poor but simple and small Symbol polyfill (only iterator key needed here)
+// poor but simple and small Symbol polyfill fake
+// (only Symbol.iterator key needed here)
 const symbolIsFaked = typeof Symbol !== 'function' || !Symbol.iterator;
 
 let originalSymbol = undefined;
@@ -22,9 +23,7 @@ const iteratorSymbol = Symbol.iterator;
  */
 export default class Seq {
     /**
-     * @class Seq
-     * @constructor
-     * @param {function} generator The generator responsible for the iteration
+     * @ignore
      */
     constructor(generator) {
         throw new Error('[Seq.constructor] Constructor is private '
@@ -392,7 +391,7 @@ export default class Seq {
                 return [next, finalize]
             });
         } else {
-            ret = Seq.empty();
+            ret = emptySeq;
         }
 
         return ret;

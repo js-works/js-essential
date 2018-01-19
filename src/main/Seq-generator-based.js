@@ -4,6 +4,7 @@
  * License: Public Domain
  * 
  * @class Seq
+ * @ignore
  */
 export default class Seq {
     /**
