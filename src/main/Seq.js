@@ -1,3 +1,8 @@
+// poor and simply Symbol polyfill
+if (typeof Symbol !== 'function' || !Symbol.iterator) {
+    Symbol = { iterator: '@@iterator' };
+}
+
 /**
  * Class as representation of a lazy sequences
  *
@@ -12,11 +17,8 @@ export default class Seq {
      * @param {function} generator The generator responsible for the iteration
      */
     constructor(generator) {
-        /**
-         * @ignore
-         * @private
-         */
-        this.__generator = generator;
+        throw new Error('[Seq.constructor] Constructor is private '
+            + '- clas Seq is final');
     }
 
     toString() {
@@ -43,40 +45,29 @@ export default class Seq {
      *      let result = f(...args);
      */
     [Symbol.iterator]() {
-        const iter = this.__generator();
-        var ret;
+        const [next, finalize] = iterate(this);
 
-        if (iter && typeof iter.next === 'function') {
-            ret = iter;
-        } else if (iter && typeof iter.generate === 'function' && typeof iter.close === 'function') {
-            const {generate, close} = iter;
+        return {
+            next() {
+                let ret, item;
 
-            ret = function* () {
                 try {
-                    let values = generate();
-
-                    while (values instanceof Array && values.length > 0) {
-                        yield* values;
-                        values = generate();
-                    }
-                } finally {
-                    close();
+                    item = next();
+                } catch (e) {
+                    finalize();
+                    throw e;
                 }
-            }();
-        } else if (typeof iter === 'function') {
-            return function* () {
-                let values = iter();
 
-                while (values instanceof Array && values.length > 0) {
-                    yield* values;
-                    values = iter();
+                if (item === endOfSeq) {
+                    ret = { value: undefined, done: true};
+                } else {
+                    ret = { value: item, done: false };
+                    finalize();
                 }
-            }();
-        } else {
-            throw new TypeError();
-        }
 
-        return ret;
+                return ret;
+            }
+        };
     };
 
     /**
@@ -91,13 +82,21 @@ export default class Seq {
             throw new TypeError('Seq.map: Alleged mapping function is not really a function')
         }
 
-        return new Seq(function* () {
-            let index = 0;
-
-            for (let x of this) {
-                yield f(x, index++);
-            }
-        }.bind(this));
+        return createSeq(() => {
+            const [generate, finalize] = iterate(this);
+          
+            let idx = -1;
+          
+            const next = () => {
+                let item = generate();
+              
+                return item === endOfSeq
+                    ? endOfSeq
+                    : f(item, ++idx);
+            };
+            
+            return [next, finalize];
+        });
     }
 
     /**
@@ -116,15 +115,23 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
-        return new Seq(function* () {
-            let index = 0;
+        return createSeq(() => {
+            const [generate, finalize] = iterate(this);
+          
+            let idx = -1;
+          
+            const next = () => {
+                let item = generate();
 
-            for (let x of this) {
-                if (pred(x, index++)) {
-                    yield x;
+                while (item !== endOfSeq && !pred(item, ++idx)) {
+                    item = generate();
                 }
-            }
-        }.bind(this));
+
+                return item;
+            };
+
+            return [next, finalize];
+        });
     }
 
     flatMap(f) {
@@ -136,17 +143,21 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
-        return new Seq(function* () {
-            let index = 0;
+        return createSeq(() => {
+            const [generate, finalize] = iterate(this);
 
-            for (let x of this) {
-                if (pred(x, index++)) {
-                    yield x;
-                } else {
-                    break;
-                }
-            }
-        }.bind(this));
+            let idx = -1;
+
+            const next = () => {
+                const item = generate();
+
+                return item === endOfSeq || pred(item, ++idx) 
+                    ? item
+                    : endOfSeq;
+            };
+
+            return  [next, finalize];
+        });
     }
 
     skipWhile(pred)  {
@@ -154,17 +165,31 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
-        return new Seq(function* () {
-            let index = 0,
-                alreadyStarted = false;
+        return createSeq(() => {
+            const [generate, finalize] = iterate(this);
 
-            for (let x of this) {
-                if (alreadyStarted || !pred(x, index++)) {
-                    yield x;
-                    alreadyStarted = true
+            let
+                idx = -1,
+                hasStarted = false;
+
+            const next = () => {
+                let ret;
+
+                let item = generate();
+
+                if (!hasStarted) {
+                    while (item !== endOfSeq && pred(item, ++idx)) {
+                        item = generate();
+                    }
+
+                    hasStarted = item !== endOfSeq;
                 }
-            }
-        }.bind(this));
+
+                return item;
+            };
+
+            return  [next, finalize];
+        });
     }
 
     take(n) {
@@ -223,10 +248,11 @@ export default class Seq {
     }
 
     toArray() {
-        return this.reduce((arr, value) => {
-            arr.push(value);
-            return arr;
-        }, []);
+        const ret = [];
+
+        this.forEach(item => ret.push(item));
+
+        return ret;
     }
 
     force() {
@@ -238,7 +264,7 @@ export default class Seq {
     }
 
     static empty() {
-        return Seq.of();
+        return emptySeq;
     }
 
     static of(...items) {
@@ -250,10 +276,91 @@ export default class Seq {
 
         if (items instanceof Seq) {
             ret = items;
+        } else if (Array.isArray(items) || typeof items === 'string') {
+            ret = createSeq(() => {
+                let index = 0;
+
+                return () => index < items.length ? items[index++] : endOfSeq;
+            });
         } else if (items && typeof items[Symbol.iterator] === 'function') {
-            ret = new Seq(() => items[Symbol.iterator]());
+            let generator = items[Symbol.iterator];
+
+
+            ret = createSeq(() => {
+                let generate = generator();
+
+                if (generate
+                    && typeof generate === 'object'
+                    && typeof generate._invoke === 'function') {
+
+                    generate = generate._invoke;
+                }
+
+                const next = () => {
+                        const item = generate();
+
+                        return item.done ? endOfSeq : item.value;
+                    };
+
+                return [next, doNothing];
+            });
         } else if (isGeneratorFunction(items)) {
-            ret =  new Seq(items);
+            ret = Seq.from({ [Symbol.iterator]: items });
+        } else if (typeof items === 'function') {
+            ret = createSeq(() => {
+                let
+                    generate = items(),
+                    finalize = doNothing,
+                    nextItems = null;
+
+                if (typeof generate === 'object') {
+                    if (generate.finalize !== undefined
+                        && generate.finalize !== null) {
+                        
+                        finalize = generate.finalize;
+                    }
+
+                    generate = generate.generate;
+                }
+
+                if (typeof generate !== 'function'
+                    && typeof finalize !== 'function') {
+                
+                    throw new Error('[Seq] Invalid sequencer');
+                }
+
+                const next = () => {
+                    let itemsReceived = false;
+
+                    if (nextItems === null) {
+
+                        do {
+                            nextItems = generate();
+
+                            if (nextItems !== null && !(nextItems instanceof Array)) {
+                                throw new Error('[Seq] Invalid sequencer return value');
+                            }
+
+                            if (nextItems === null) {
+                                return endOfSeq;
+                            } else if (nextItems.length > 0) {
+                                itemsReceived = true;
+                            }
+                        } while (!itemsReceived);
+                    }
+
+                    if (nextItems.length === 1) {
+                        const item = nextItems[0];
+                        nextItems = null;
+                        return item;
+                    } else {
+                        const item = nextItems.shift();
+                        return item;
+                    }
+                }
+
+                return [next, finalize]
+            });
         } else {
             ret = Seq.empty();
         }
@@ -266,24 +373,52 @@ export default class Seq {
     }
 
     static flatten(seqOfSeqs) {
-        return new Seq(function* () {
+        return new Seq.from(function* () {
             for (const seq of Seq.from(seqOfSeqs)) {
                 for (const item of Seq.from(seq)) {
                     yield item;
                 }
             }
         });
+/*
+        return createSeq(() => {
+            const [outerGenerate, outerFinalize] = iterate(this);
+
+            let
+                outerSeq = null,
+                innerSeq = null,
+
+            function next() {
+                if (outerSeq === null) {
+                    const outerItem = outerGenerate();
+
+                    if (outerItem === endOfSeq) {
+                        return endOfSeq;
+                    }
+                   
+                    outerSeq = Seq.from(outerItem);
+                }
+
+                if (innerSeq === null) {
+
+                }
+                
+            };
+
+            return [next, finalize];
+        });
+*/
     }
 
     static iterate(initialValues, f) {
         const initVals = initialValues.slice();
 
-        return new Seq(function* () {
+        return createSeq(() => {
             const values = initVals.slice();
 
-            while (true) {
-                values.push(f(...values));
-                yield values.shift();
+            return () => {
+                values.push(f.apply(null, values));
+                return values.shift();
             }
         });
     }
@@ -322,13 +457,50 @@ export default class Seq {
     }
 
     static isNonStringSeqable(obj) {
-        return (typeof obj !== 'string' && !(obj instanceof String) && Seq.isSeqable(obj));
+        return (typeof obj !== 'string'
+            && !(obj instanceof String) && Seq.isSeqable(obj));
     }
 }
+
+// --- locals -------------------------------------------------------
+
+const
+    endOfSeq = Object.freeze({}),
+    GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor,
+    doNothing = () => {},
+    endSequencing = () => endOfSeq,
+    emptySeq = createSeq(() => [endSequencing, doNothing]);
 
 function isGeneratorFunction(fn) {
     return fn instanceof GeneratorFunction;
 }
 
-const
-    GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor;
+function createSeq(generator) {
+    const ret = Object.create(Seq.prototype);
+    ret.__generator = generator;
+    return ret;
+}
+
+function iterate(seq) {
+    let ret;
+
+    if (!seq || typeof seq.__generator !== 'function') {
+        ret = [endSequencing, doNothing];
+    } else {
+        const result = seq.__generator(endOfSeq);
+        
+        if (Array.isArray(result)) {
+            const
+                next = result[0] || endSequencing,
+                finalize = result[1] || doNothing;
+
+            ret = [next, finalize];
+        } else if (typeof result === 'function') {
+            ret = [result, doNothing];
+        } else {
+            ret = [endSequencing, doNothing];
+        }
+    }
+
+    return ret;
+}

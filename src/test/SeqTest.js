@@ -1,42 +1,44 @@
 // License: Public domain
 
-import {describe, it} from 'mocha';
-import {expect} from 'chai';
+import { describe, it } from 'mocha';
+import { expect } from 'chai';
 import Seq from '../../src/main/Seq';
+// import Seq from '../../src/main/Seq-generator-based';
 
 /**
  * @test {Seq}
  */
 describe('Testing constructor of Seq', () => {
-    it('should construct new Seqs using generators', () =>
-        expect(new Seq(function* () { yield 1; yield 2; yield 3; })
+    it('should construct new Seqs from using generators', () =>
+        expect(Seq.from(function* () { yield 1; yield 2; yield 3; })
                 .toArray())
                 .to.eql([1, 2, 3])
     );
 
     it('should construct new Seqs using normal methods (variant 1)', () => {
-        const seq = new Seq(() => {
+        const seq = Seq.from(() => {
             let counter = 0;
-            return () => counter < 5 ? [counter++] : [];
+
+            return () => counter < 5 ? [counter, counter++] : null;
         });
 
-        expect(seq.toArray()).to.eql([0, 1, 2, 3, 4]);
+        expect(seq.toArray()).to.eql([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
     });
 
     it('should construct new Seqs using normal methods (variant 2)', () => {
-        let isClosed = false;
+        let isFinalized = false;
 
-        const seq = new Seq(() => {
+        const seq = Seq.from(endOfSeq => {
             let counter = 0;
 
             return {
-                generate: () => counter < 5 ? [counter++] : [],
-                close: () => isClosed = true
+                generate: () => counter < 5 ? [counter++] : null,
+                finalize: () => isFinalized = true
             };
         });
 
         expect(seq.toArray()).to.eql([0, 1, 2, 3, 4]);
-        expect(isClosed).to.equal(true);
+        expect(isFinalized).to.equal(true);
     });
 });
 
@@ -70,7 +72,6 @@ describe('Testing static factory method Seq.of', () => {
 /**
  * @test {Seq.empty}
  */
-// TODO: Handling of ClojureScript "Seqable" objects not tested yet
 describe('Testing static factory method Seq.from', () => {
     it('should create a seq from an iterable object (=> object[Symbol.iterator])', () =>
         expect(Seq.from([2, 4, 6])
