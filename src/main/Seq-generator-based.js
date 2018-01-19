@@ -240,6 +240,37 @@ export default class Seq {
             ret = new Seq(() => items[Symbol.iterator]());
         } else if (isGeneratorFunction(items)) {
             ret =  new Seq(items);
+        } else if (typeof items === 'function') {
+            ret = new Seq(function* () {
+                const result = items();
+
+                if (typeof result === 'function') {
+                    let items = result();
+
+                    while (Array.isArray(items)) {
+                        yield* items;
+
+                        items = result();
+                    }
+                } else {
+                    const { generate, finalize } = result;
+
+                    try {
+                        let items = generate();
+
+                        while (Array.isArray(items)) {
+                            yield* items;
+
+                            items = generate();
+                        }
+                    } finally {
+                        if (finalize) {
+                            finalize();
+                        }
+                    }
+                }
+
+            })
         } else {
             ret = Seq.empty();
         }
