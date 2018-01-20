@@ -495,12 +495,13 @@ export default class Seq {
     }
 
     static isSeqable(obj) {
-        return !!obj && (typeof obj[iteratorSymbol] === 'function');
+        return !!obj && typeof obj[iteratorSymbol] === 'function';
     }
 
     static isSeqableObject(obj) {
-        return (typeof obj !== 'string'
-            && !(obj instanceof String) && Seq.isSeqable(obj));
+        return !!obj
+            && typeof obj === 'object'
+            && typeof obj[iteratorSymbol] === 'function';
     }
 }
 

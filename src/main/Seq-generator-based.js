@@ -77,13 +77,15 @@ export default class Seq {
             throw new TypeError('Seq.map: Alleged mapping function is not really a function')
         }
 
+        const self = this;
+
         return new Seq(function* () {
             let index = 0;
 
-            for (let x of this) {
+            for (let x of self) {
                 yield f(x, index++);
             }
-        }.bind(this));
+        });
     }
 
     /**
@@ -102,15 +104,17 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
+        const self = this;
+
         return new Seq(function* () {
             let index = 0;
 
-            for (let x of this) {
+            for (let x of self) {
                 if (pred(x, index++)) {
                     yield x;
                 }
             }
-        }.bind(this));
+        });
     }
 
     flatMap(f) {
@@ -122,17 +126,19 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
+        const self = this;
+
         return new Seq(function* () {
             let index = 0;
 
-            for (let x of this) {
+            for (let x of self) {
                 if (pred(x, index++)) {
                     yield x;
                 } else {
                     break;
                 }
             }
-        }.bind(this));
+        });
     }
 
     skipWhile(pred)  {
@@ -140,17 +146,19 @@ export default class Seq {
             throw new TypeError('Seq.filter: Alleged predicate is not really a function')
         }
 
+        const self = this;
+
         return new Seq(function* () {
             let index = 0,
                 alreadyStarted = false;
 
-            for (let x of this) {
+            for (let x of self) {
                 if (alreadyStarted || !pred(x, index++)) {
                     yield x;
                     alreadyStarted = true
                 }
             }
-        }.bind(this));
+        });
     }
 
     take(n) {
@@ -297,9 +305,7 @@ export default class Seq {
     static flatten(seqOfSeqs) {
         return new Seq(function* () {
             for (const seq of Seq.from(seqOfSeqs)) {
-                for (const item of Seq.from(seq)) {
-                    yield item;
-                }
+                yield* Seq.from(seq);
             }
         });
     }
@@ -318,7 +324,11 @@ export default class Seq {
     }
 
     static repeat(value, n = Infinity) {
-        return Seq.iterate([value], value => value).take(n);
+        return Seq.from(function* () {
+            for (let i = 0; i < n; ++i) {
+                yield value;
+            }
+        });
     }
 
     /**
@@ -351,6 +361,8 @@ export default class Seq {
     }
 
     static isSeqableObject(obj) {
-        return (typeof obj !== 'string' && !(obj instanceof String) && Seq.isSeqable(obj));
+        return !!obj
+            && typeof obj === 'object'
+            && typeof obj[Symbol.iterator] === 'function';
     }
 }
