@@ -1,0 +1,14 @@
+/boxroom
+/package-lock.json
+/*.log
+/.project
+/.idea
+/.c9
+/.codio
+/.settings
+/.grunt
+/node_modules
+/build/*
+/nbproject
+
+
