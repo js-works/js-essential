@@ -2,8 +2,8 @@
 
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-import Seq from '../../src/main/Seq';
-// import Seq from '../../src/main/Seq-generator-based';
+//import Seq from '../../src/main/Seq';
+import Seq from '../../src/main/Seq-generator-based';
 
 /**
  * @test {Seq.empty}
@@ -224,11 +224,11 @@ describe('Testing static method Seq.isSeqable', () => {
 });
 
 /**
- * @test {Seq.isNonStringSeqable}
+ * @test {Seq.isSeqableObject}
  */
-describe('Testing static method Seq.isNonStringSeqable', () => {
+describe('Testing static method Seq.isSeqableObject', () => {
     it('should determine whether or not an object is seqable and not a string', () => {
-        const f = Seq.isNonStringSeqable;
+        const f = Seq.isSeqableObject;
 
         expect([f(undefined), f(null), f(true), f(42), f([]), f([1, 2]), f('some text'), f(Seq.empty())])
                 .to.eql([false, false, false, false, true, true, false, true]);

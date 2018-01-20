@@ -238,8 +238,6 @@ export default class Seq {
             ret = items;
         } else if (items && typeof items[Symbol.iterator] === 'function') {
             ret = new Seq(() => items[Symbol.iterator]());
-        } else if (isGeneratorFunction(items)) {
-            ret =  new Seq(items);
         } else if (typeof items === 'function') {
             ret = new Seq(function* () {
                 const result = items();
@@ -252,7 +250,7 @@ export default class Seq {
 
                         items = result();
                     }
-                } else {
+                } else if (result && result.generate) {
                     const { generate, finalize } = result;
 
                     try {
@@ -268,8 +266,22 @@ export default class Seq {
                             finalize();
                         }
                     }
-                }
+                } else {
+                    const iter =
+                        typeof result === 'function'
+                            ? result
+                            : result._invoke.bind(iter);
 
+                    let item;
+
+                    do {
+                        item = iter();
+
+                        if (!item.done) {
+                            yield item.value;
+                        }
+                    } while (!item.done);
+                }
             })
         } else {
             ret = Seq.empty();
@@ -338,14 +350,7 @@ export default class Seq {
         return !!obj && (typeof obj[Symbol.iterator] === 'function');
     }
 
-    static isNonStringSeqable(obj) {
+    static isSeqableObject(obj) {
         return (typeof obj !== 'string' && !(obj instanceof String) && Seq.isSeqable(obj));
     }
 }
-
-function isGeneratorFunction(fn) {
-    return fn instanceof GeneratorFunction;
-}
-
-const
-    GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor;

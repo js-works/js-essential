@@ -498,7 +498,7 @@ export default class Seq {
         return !!obj && (typeof obj[iteratorSymbol] === 'function');
     }
 
-    static isNonStringSeqable(obj) {
+    static isSeqableObject(obj) {
         return (typeof obj !== 'string'
             && !(obj instanceof String) && Seq.isSeqable(obj));
     }
