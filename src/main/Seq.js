@@ -1,19 +1,3 @@
-// poor but simple and small Symbol polyfill fake
-// (only Symbol.iterator key needed here)
-const symbolIsFaked = typeof Symbol !== 'function' || !Symbol.iterator;
-
-let originalSymbol = undefined;
-
-if (symbolIsFaked) {
-    if (typeof Symbol !== 'undefined') {
-        originalSymbol = Symbol;
-    }
-
-    Symbol = { iterator: '@@iterator' };
-}
-
-const iteratorSymbol = Symbol.iterator;
-
 /**
  * Class as representation of a lazy sequences
  *
@@ -33,51 +17,6 @@ export default class Seq {
     toString() {
         return 'Seq/instance';
     }
-
-    /**
-     * Generates a new ECMAScript 6 iterator to enumerate the items of the
-     * sequence.
-     * This allows the usage of sequences in "for ... of" loops or with
-     * the spread operator (...).
-     * 
-     * @example
-     *      let myIterator = mySeq[Symbol.iterator]();
-     *
-     * @example
-     *      for (let item of k) {
-     *          console.log(item);
-     *      } 
-     *
-     * @example
-     *      let args = Seq.of(arg1, arg2, arg3);
-     * 
-     *      let result = f(...args);
-     */
-    [Symbol.iterator]() {
-        const [next, finalize] = iterate(this);
-
-        return {
-            next() {
-                let ret, item;
-
-                try {
-                    item = next();
-                } catch (e) {
-                    finalize();
-                    throw e;
-                }
-
-                if (item === endOfSeq) {
-                    ret = { value: undefined, done: true};
-                } else {
-                    ret = { value: item, done: false };
-                    finalize();
-                }
-
-                return ret;
-            }
-        };
-    };
 
     /**
      * Maps each value of the seq
@@ -285,110 +224,90 @@ export default class Seq {
 
         if (items instanceof Seq) {
             ret = items;
-        } else if (Array.isArray(items) || typeof items === 'string') {
+        } else if (typeof items === 'string' || items instanceof Array) {
             ret = createSeq(() => {
                 let index = 0;
 
                 return () => index < items.length ? items[index++] : endOfSeq;
             });
         } else if (items && typeof items[iteratorSymbol] === 'function') {
-            let generator = items[iteratorSymbol];
-
-
-            ret = createSeq(() => {
-                let generate = generator();
-
-                if (generate
-                    && typeof generate === 'object'
-                    && typeof generate._invoke === 'function') {
-
-                    generate = generate._invoke;
-                }
-
-                const next = () => {
-                        const item = generate();
-
-                        return item.done ? endOfSeq : item.value;
-                    };
-
-                return [next, doNothing];
-            });
+            ret = Seq.from(() => items[iteratorSymbol]());
         } else if (typeof items === 'function') {
             ret = createSeq(() => {
+                const
+                    result = items(),
+                    typeofResult = typeof result,
+                    
+                    resultIsObject =
+                        result !== null && typeofResult === 'object',
+
+                    isEcmaScriptIterator = resultIsObject
+                        && typeof result.next === 'function',
+
+                    isSimpleIterator = typeof result === 'function',
+
+                    isAdvancedIterator =
+                        resultIsObject
+                            && !isEcmaScriptIterator
+                            && typeof result.generate === 'function';
+
                 let
-                    generate = items(),
-                    finalize = doNothing,
-                    nextItems = null;
+                    itemQueue = null,
+                    generate = null,
+                    finalize = null;
 
-                if (generate && typeof generate === 'object') {
-                    if (typeof generate.generate === 'function') {
-                        if (generate.finalize !== undefined
-                            && generate.finalize !== null) {
-                            
-                            finalize = generate.finalize;
-                        }
+                if (isEcmaScriptIterator) {
+                    generate = () => result.next();
+                } else if (isSimpleIterator) {
+                    generate = result;
+                } else if (isAdvancedIterator) {
+                    generate = result.generate;
 
-                        generate = generate.generate;
-                    } else if (typeof generate.next === 'function') {
-                        let next = generate.next;
-
-                        if (next
-                            && typeof next === 'object'
-                            && typeof next._invoke === 'function') {
-
-                            next = next._invoke;
-                        } else {
-                            next = next.bind(generate);
-                        }
-
-                        generate = () => {
-                            // TODO: finalize
-                            const result = next();
-
-                            return !result || result.done
-                                ? null
-                                : [result.value];
-                        }
+                    if (typeof result.finalize === 'function') {
+                        finalize = result.finalize;
                     }
                 }
 
-                if (typeof generate !== 'function'
-                    && typeof finalize !== 'function') {
-                
-                    throw new Error('[Seq] Invalid sequencer');
-                }
+                function next() {
+                    let item;
 
-                const next = () => {
-                    let itemsReceived = false;
+                    if (isEcmaScriptIterator) {
+                        const token = generate();
 
-                    if (nextItems === null) {
-
-                        do {
-                            nextItems = generate();
-
-                            if (nextItems !== null && !(nextItems instanceof Array)) {
-                                throw new Error('[Seq] Invalid sequencer return value');
-                            }
-
-                            if (nextItems === null) {
-                                return endOfSeq;
-                            } else if (nextItems.length > 0) {
-                                itemsReceived = true;
-                            }
-                        } while (!itemsReceived);
-                    }
-
-                    if (nextItems.length === 1) {
-                        const item = nextItems[0];
-                        nextItems = null;
-                        return item;
+                        item = token.done ? endOfSeq : token.value;
+                    } else if (!isSimpleIterator && !isAdvancedIterator) {
+                        item = endOfSeq;
                     } else {
-                        const item = nextItems.shift();
-                        return item;
-                    }
-                }
+                        if (itemQueue !== null) {
+                            item = itemQueue.shift();
 
-                return [next, finalize]
+                            if (itemQueue.length === 0) {
+                                itemQueue = null;
+                            }
+                        } else {
+                            do {
+                                itemQueue = generate();
+                            } while (itemQueue instanceof Array
+                                && itemQueue.length === 0);
+
+                            if (!(itemQueue instanceof Array)) {
+                                itemQueue = null;
+                                item = endOfSeq;
+                            } else {
+                                if (itemQueue.length === 1) {
+                                    item = itemQueue[0];
+                                    itemQueue = null;
+                                } else {
+                                    item = itemQueue.shift();
+                                }
+                            }
+                        }
+                    }
+
+                    return item;
+                };
+
+                return [next, finalize];
             });
         } else {
             ret = emptySeq;
@@ -505,18 +424,52 @@ export default class Seq {
     }
 }
 
-// --- reset Symbol adjustment --------------------------------------
-if (symbolIsFaked) {
-    Symbol = originalSymbol;
-}
-
 // --- locals -------------------------------------------------------
 
 const
     endOfSeq = Object.freeze({}),
     doNothing = () => {},
     endSequencing = () => endOfSeq,
+
+    iteratorSymbol = typeof Symbol === 'function' && Symbol.iterator
+        ? Symbol.iterator
+        : '@@iterator',
+    
     emptySeq = createSeq(() => [endSequencing, doNothing]);
+    
+
+Seq.prototype[iteratorSymbol] = function () {
+    const [generate, finalize] = iterate(this);
+
+    let done = false;
+
+    return {
+        next() {
+            if (done) {
+                return { value: undefined, done: true};
+            }
+
+            let item;
+
+            try {
+                item = generate();
+            } catch(e) {
+                finalize();
+                throw e;
+            }
+
+            if (item === endOfSeq) {
+                done = true;
+                finalize();
+            }
+            
+            return item === endOfSeq
+                ? { value: undefined, done: true }
+                : { value: item, done: false };
+        }
+    };
+};
+
 
 function createSeq(generator) {
     const ret = Object.create(Seq.prototype);
