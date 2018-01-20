@@ -8,62 +8,16 @@
  */
 export default class Seq {
     /**
-     * @class Seq
-     * @constructor
-     * @param {function} generator The generator responsible for the iteration
+     * @ignore
      */
     constructor(generator) {
-        /**
-         * @ignore
-         * @private
-         */
-        this.__generator = generator;
+        throw new Error('[Seq.constructor] Constructor is private '
+            + '- clas Seq is final');
     }
 
     toString() {
         return 'Seq/instance';
     }
-
-    /**
-     * Generates a new ECMAScript 6 iterator to enumerate the items of the
-     * sequence.
-     * This allows the usage of sequences in "for ... of" loops or with
-     * the spread operator (...).
-     * 
-     * @example
-     *      let myIterator = mySeq[Symbol.iterator]();
-     *
-     * @example
-     *      for (let item of k) {
-     *          console.log(item);
-     *      } 
-     *
-     * @example
-     *      let args = Seq.of(arg1, arg2, arg3);
-     * 
-     *      let result = f(...args);
-     */
-    [Symbol.iterator]() {
-        const iter = this.__generator();
-        var ret;
-
-        if (iter && typeof iter.next === 'function') {
-            ret = iter;
-        } else if (typeof iter === 'function') {
-            return function* () {
-                let values = iter();
-
-                while (values instanceof Array && values.length > 0) {
-                    yield* values;
-                    values = iter();
-                }
-            }();
-        } else {
-            throw new TypeError();
-        }
-
-        return ret;
-    };
 
     /**
      * Maps each value of the seq
@@ -79,7 +33,7 @@ export default class Seq {
 
         const self = this;
 
-        return new Seq(function* () {
+        return Seq.from(function* () {
             let index = 0;
 
             for (let x of self) {
@@ -106,7 +60,7 @@ export default class Seq {
 
         const self = this;
 
-        return new Seq(function* () {
+        return Seq.from(function* () {
             let index = 0;
 
             for (let x of self) {
@@ -128,7 +82,7 @@ export default class Seq {
 
         const self = this;
 
-        return new Seq(function* () {
+        return Seq.from(function* () {
             let index = 0;
 
             for (let x of self) {
@@ -148,7 +102,7 @@ export default class Seq {
 
         const self = this;
 
-        return new Seq(function* () {
+        return Seq.from(function* () {
             let index = 0,
                 alreadyStarted = false;
 
@@ -244,55 +198,19 @@ export default class Seq {
 
         if (items instanceof Seq) {
             ret = items;
-        } else if (items && typeof items[Symbol.iterator] === 'function') {
-            ret = new Seq(() => items[Symbol.iterator]());
-        } else if (typeof items === 'function') {
-            ret = new Seq(function* () {
-                const result = items();
-
-                if (typeof result === 'function') {
-                    let items = result();
-
-                    while (Array.isArray(items)) {
-                        yield* items;
-
-                        items = result();
-                    }
-                } else if (result && result.generate) {
-                    const { generate, finalize } = result;
-
-                    try {
-                        let items = generate();
-
-                        while (Array.isArray(items)) {
-                            yield* items;
-
-                            items = generate();
-                        }
-                    } finally {
-                        if (finalize) {
-                            finalize();
-                        }
-                    }
-                } else {
-                    const iter =
-                        typeof result === 'function'
-                            ? result
-                            : result._invoke.bind(iter);
-
-                    let item;
-
-                    do {
-                        item = iter();
-
-                        if (!item.done) {
-                            yield item.value;
-                        }
-                    } while (!item.done);
+        } else if (typeof items === 'string' || items instanceof Array) {
+            ret = Seq.from(function* () {
+                for (let i = 0; i < items.length; ++i) {
+                    yield items[i];
                 }
-            })
+            });
+        } else if (items && typeof items[iteratorSymbol] === 'function') {
+            ret = Seq.from(() => items[iteratorSymbol]());
+        } else if (typeof items === 'function') {
+            ret = Object.create(Seq.prototype);
+            ret[iteratorSymbol] = createGeneratorFunction(items);
         } else {
-            ret = Seq.empty();
+            ret = emptySeq;
         }
 
         return ret;
@@ -303,8 +221,10 @@ export default class Seq {
     }
 
     static flatten(seqOfSeqs) {
-        return new Seq(function* () {
-            for (const seq of Seq.from(seqOfSeqs)) {
+        const outerSeqs = Seq.from(seqOfSeqs);
+
+        return Seq.from(function* () {
+            for (const seq of outerSeqs) {
                 yield* Seq.from(seq);
             }
         });
@@ -313,7 +233,7 @@ export default class Seq {
     static iterate(initialValues, f) {
         const initVals = initialValues.slice();
 
-        return new Seq(function* () {
+        return Seq.from(function* () {
             const values = initVals.slice();
 
             while (true) {
@@ -357,12 +277,75 @@ export default class Seq {
     }
 
     static isSeqable(obj) {
-        return !!obj && (typeof obj[Symbol.iterator] === 'function');
+        const typeOfObj = typeof obj;
+
+        return !!obj
+            && (typeOfObj === 'object' || typeOfObj === 'string')
+            && (typeof obj[iteratorSymbol] === 'function'
+                || obj instanceof Array);
     }
 
     static isSeqableObject(obj) {
         return !!obj
             && typeof obj === 'object'
-            && typeof obj[Symbol.iterator] === 'function';
+            && (typeof obj[iteratorSymbol] === 'function'
+                || obj instanceof Array);
     }
 }
+
+function createGeneratorFunction(generator) {
+    return function* () {
+        let result = generator();
+
+        const
+            typeOfResult = typeof result,
+            resultIsObject = typeOfResult === 'object',
+            resultIsFunction = typeOfResult === 'function';
+
+        if (resultIsObject && typeof result.next === 'function') {
+            const next = () => result.next();
+
+            let item = next();
+
+            while (item && !item.done) {
+                yield item.value;
+
+                item = next();
+            }
+        } else if (resultIsFunction) {
+            const generate = result;
+            let values = generate();
+
+            while (values instanceof Array && values.length > 0) {
+                yield* values;
+                values = generate();
+            }
+        } else if (typeof result.generate === 'function') {
+            const
+                generate = result.generate,
+                finalize = result.finalize;
+
+            try {
+                let values = generate();
+
+                while (values instanceof Array) {
+                    yield* values;
+                    values = generate();
+                }
+            } finally {
+                if (typeof finalize === 'function') {
+                    finalize();
+                }
+            }
+        }
+    };
+}
+
+// --- locals -------------------------------------------------------
+
+const
+    iteratorSymbol = typeof Symbol === 'function' && Symbol.iterator
+        ? Symbol.iterator
+        : '@@iterator',
+
+    emptySeq = Seq.from(function* () {});
