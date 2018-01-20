@@ -10,8 +10,8 @@ export default class Seq {
      * @ignore
      */
     constructor(generator) {
-        throw new Error('[Seq.constructor] Constructor is private '
-            + '- clas Seq is final');
+        throw new Error('[Seq.constructor] Constructor is not callable '
+            + '- use static factory methods instead');
     }
 
     toString() {
@@ -190,8 +190,20 @@ export default class Seq {
 
         let idx = 0;
 
-        for (let item of this) {
-            action(item, idx++)
+        const [next, finalize] = iterate(this);
+
+        try {
+            let item;
+
+            do {
+                item = next();
+
+                if (item !== endOfSeq) {
+                    action(item, idx++)
+                }
+            } while (item !== endOfSeq);
+        } finally {
+            finalize();
         }
     }
 
