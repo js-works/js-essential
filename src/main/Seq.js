@@ -1,5 +1,10 @@
 /**
- * Class as representation of a lazy sequences
+ * Class as representation of a lazy sequence.
+ * 
+ * This implementation does not use ES2015 generators/iterators,
+ * because the ES2015 feature "for (const item of seq)" has a really
+ * poor performance.
+ * See: https://jsfiddle.net/vavkuoLp/
  *
  * License: Public Domain
  * 
