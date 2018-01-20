@@ -37,14 +37,12 @@ export default class Strings {
         } else {
             ret = value.toString();
 
-            if (typeof ret !== 'string') {
-                // Normally in this case the JavaScript engine should return undefined.
-                // Nevertheless, to play save, we handle all cases here.
-                if (ret === undefined || ret === null) {
-                    ret = '';
-                } else {
-                    ret = '' + ret;
-                }
+            // Normally in this case the JavaScript engine should return undefined.
+            // Nevertheless, to play save, we handle all cases here.
+            if (ret === undefined || ret === null) {
+                ret = '';
+            } else if (typeof ret !== 'string') {
+                ret = String(ret);
             }
         }
 
