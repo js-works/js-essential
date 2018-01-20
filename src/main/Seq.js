@@ -154,7 +154,7 @@ export default class Seq {
         }
 
         const dummy = {};
-        var ret = dummy;
+        let ret = dummy;
 
         this.forEach((value, index) => {
             if (index == 0) {
@@ -232,7 +232,7 @@ export default class Seq {
     }
 
     static from(items) {
-        var ret;
+        let ret;
 
         if (items instanceof Seq) {
             ret = items;
@@ -495,7 +495,7 @@ function iterate(seq) {
     if (!seq || typeof seq.__generator !== 'function') {
         ret = [endSequencing, doNothing];
     } else {
-        const result = seq.__generator(endOfSeq);
+        const result = seq.__generator();
         
         if (Array.isArray(result)) {
             const
