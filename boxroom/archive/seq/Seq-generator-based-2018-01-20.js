@@ -1,6 +1,11 @@
 /**
- * Class as representation of a lazy sequences
+ * Class as representation of a lazy sequence
  *
+ * IMPORTANT: This implementation has been abandoned! It is based heavily
+ *            on ES2015 generator functions, which turned out to be very
+ *            slow. That's why this implementation has been replaced by
+ *            a different, non-generator implementation of class Seq.
+ * 
  * License: Public Domain
  * 
  * @class Seq
@@ -11,8 +16,8 @@ export default class Seq {
      * @ignore
      */
     constructor(generator) {
-        throw new Error('[Seq.constructor] Constructor is private '
-            + '- clas Seq is final');
+        throw new Error('[Seq.constructor] Constructor is not callable '
+            + '- use static factory methods instead');
     }
 
     toString() {

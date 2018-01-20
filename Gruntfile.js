@@ -17,7 +17,7 @@ module.exports = function (grunt) {
                     'transform-runtime', {
                         helpers: false,
                         polyfill: false,
-                        regenerator: true,
+                        regenerator: false,
                         moduleName: 'babel-runtime'
                     }]]
             },
@@ -47,7 +47,7 @@ module.exports = function (grunt) {
             dist : {
                 options: {
                     source: 'src/main/',
-                    destination: 'dist/v<%= pkg.version %>/docs/api',
+                    destination: 'dist/docs/api',
                     title: 'js-essential',
                     undocumentIdentifier: true,
 
@@ -62,7 +62,7 @@ module.exports = function (grunt) {
         browserify: {
             js: {
                 src: 'build/src/js-essential.js',
-                dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js',
+                dest: 'dist/js-essential-<%= pkg.version %>.js',
                 
                 options: {
                     browserifyOptions: {
@@ -82,8 +82,8 @@ module.exports = function (grunt) {
                         + '*/\n'
             },
             js: {
-                src: ['dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js'],
-                dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js'
+                src: ['dist/js-essential-<%= pkg.version %>.js'],
+                dest: 'dist/js-essential-<%= pkg.version %>.min.js'
             }
         },
         compress: {
@@ -93,44 +93,30 @@ module.exports = function (grunt) {
                     level: 9
                 },
                 files: [{
-                    src: ['dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js'],
-                    dest: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js.gz'
+                    src: ['dist/js-essential-<%= pkg.version %>.min.js'],
+                    dest: 'dist/js-essential-<%= pkg.version %>.min.js.gz'
                 }, {
                     src: ['node_modules/babel-polyfill/dist/polyfill.min.js'],
-                    dest: 'dist/v<%= pkg.version %>/polyfill.min.js.gz'
+                    dest: 'dist/polyfill.min.js.gz'
                 }]
             }
         },
         copy: {
             jsEssential1: {
-                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.js',
-                dest: 'dist/js-essential/js-essential.js'
+                src: 'dist/js-essential-<%= pkg.version %>.js',
+                dest: 'dist/js-essential.js'
             },
             jsEssential2: {
-                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js',
-                dest: 'dist/js-essential/js-essential.min.js'
+                src: 'dist/js-essential-<%= pkg.version %>.min.js',
+                dest: 'dist/js-essential.min.js'
             },
             jsEssential3: {
-                src: 'dist/v<%= pkg.version %>/js-essential-<%= pkg.version %>.min.js.gz',
-                dest: 'dist/js-essential/js-essential.min.js.gz'
+                src: 'dist/js-essential-<%= pkg.version %>.min.js.gz',
+                dest: 'dist/js-essential.min.js.gz'
             },
-            polyfill1: {
+            polyfill: {
                 src: 'node_modules/babel-polyfill/dist/polyfill.min.js',
-                dest: 'dist/v<%= pkg.version %>/polyfill.min.js'
-            },
-            polyfill2: {
-                src: 'node_modules/babel-polyfill/dist/polyfill.min.js',
-                dest: 'dist/js-essential/polyfill.min.js'
-            },
-            polyfill3: {
-                src: 'dist/v<%= pkg.version %>/polyfill.min.js.gz',
-                dest: 'dist/js-essential/polyfill.min.js.gz'
-            },
-            docs: {
-                cwd: 'dist/v<%= pkg.version %>/docs',
-                src: '**',
-                dest: 'dist/js-essential/docs/',
-                expand: true
+                dest: 'dist/polyfill.min.js'
             }
         },
         watch: {
@@ -139,7 +125,7 @@ module.exports = function (grunt) {
                     spawn: true,
                 },
                 files: ['src/**/*.js'],
-                 tasks: ['compile', 'mochaTest']
+                tasks: ['compile', 'mochaTest']
                 //tasks: ['esdoc']
             }
         }
@@ -167,6 +153,6 @@ module.exports = function (grunt) {
     grunt.registerTask('compile', ['babel']);
     grunt.registerTask('test', ['babel', 'mochaTest']);
     grunt.registerTask('doc', ['babel', 'mochaTest', 'esdoc']);
-    grunt.registerTask('dist', ['clean', 'babel', 'mochaTest', /*'esdoc',*/ 'browserify', 'uglify', 'compress', 'copy']);
+    grunt.registerTask('dist', ['clean', 'babel', 'mochaTest', 'esdoc', 'browserify', 'uglify', 'compress', 'copy']);
     grunt.registerTask('default', ['dist']);
 };

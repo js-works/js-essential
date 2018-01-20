@@ -1,13 +1,14 @@
 /**
- * Class as representation of a lazy sequence.
+ * Class as representation of a lazy sequence
  * 
  * This implementation does not use ES2015 generators/iterators,
  * because the ES2015 feature "for (const item of seq)" has a really
  * poor performance.
- * 
  * See: https://jsfiddle.net/vavkuoLp/
  *
  * License: Public Domain
+ * 
+ * @class Seq
  */
 export default class Seq {
     /**
@@ -21,19 +22,6 @@ export default class Seq {
     toString() {
         return 'Seq/instance';
     }
-
-    /* develblock:start */
-    [Symbol.iterator]() {
-        // Will be overridden below - only there for API documentation
-        // tool esdoc, to indicate in the API docs that class Seq
-        // is iterable.
-        // Symbol.iterator needs a polyfill for non-ES2015 browsers,
-        // that's why that block will be stripped by webpack later.
-        // This Seq implementation shall work completely without
-        // any ES2015 polyfills and also without any other modules or
-        // source files.
-    }
-    /* develblock:end */
 
     /**
      * Maps each value of the seq

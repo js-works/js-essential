@@ -3,7 +3,6 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import Seq from '../../src/main/Seq';
-//import Seq from '../../src/main/Seq-generator-based';
 
 /**
  * @test {Seq.empty}
