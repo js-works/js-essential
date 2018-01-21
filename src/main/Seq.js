@@ -14,8 +14,9 @@ export default class Seq {
      * @ignore
      */
     constructor(generator) {
-        throw new Error('[Seq.constructor] Constructor is not callable '
-            + '- use static factory methods instead');
+        throw new Error(
+            '[Seq.constructor] Constructor is not callable '
+                + '- use static factory methods instead');
     }
 
     toString() {
@@ -521,22 +522,18 @@ function createSeq(generator) {
 function iterate(seq) {
     let ret;
 
-    if (!seq || typeof seq.__generator !== 'function') {
-        ret = [endSequencing, doNothing];
-    } else {
-        const result = seq.__generator();
-        
-        if (result instanceof Array) {
-            const
-                next = result[0] || endSequencing,
-                finalize = result[1] || doNothing;
+    const result = seq.__generator();
+    
+    if (result instanceof Array) {
+        const
+            next = result[0] || endSequencing,
+            finalize = result[1] || doNothing;
 
-            ret = [next, finalize];
-        } else if (typeof result === 'function') {
-            ret = [result, doNothing];
-        } else {
-            ret = [endSequencing, doNothing];
-        }
+        ret = [next, finalize];
+    } else if (typeof result === 'function') {
+        ret = [result, doNothing];
+    } else {
+        ret = [endSequencing, doNothing];
     }
 
     return ret;
