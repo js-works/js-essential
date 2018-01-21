@@ -59,15 +59,22 @@ module.exports = function (grunt) {
                 }
             }
         },
-        browserify: {
+        webpack: {
             js: {
-                src: 'build/src/js-essential.js',
-                dest: 'dist/js-essential-<%= pkg.version %>.js',
-                
-                options: {
-                    browserifyOptions: {
-                        standalone: 'jsEssential'
-                    }
+                entry: ['./build/src/js-essential.js'],
+                output: {
+                    filename: './dist/js-essential-<%= pkg.version %>.js',
+                    libraryTarget: 'umd'
+                },
+                module: {
+                    loaders: [{
+                        loader: 'webpack-strip-blocks',
+                        options: {
+                            blocks: ['strip-block'],
+                            start: '/*',
+                            end: '*/'
+                        }
+                    }]
                 }
             }
         },
@@ -143,7 +150,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-mocha-test');
-    grunt.loadNpmTasks('grunt-browserify');
+    grunt.loadNpmTasks('grunt-webpack');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-watch');
@@ -153,6 +160,6 @@ module.exports = function (grunt) {
     grunt.registerTask('compile', ['babel']);
     grunt.registerTask('test', ['babel', 'mochaTest']);
     grunt.registerTask('doc', ['babel', 'mochaTest', 'esdoc']);
-    grunt.registerTask('dist', ['clean', 'babel', 'mochaTest', 'esdoc', 'browserify', 'uglify', 'compress', 'copy']);
+    grunt.registerTask('dist', ['clean', 'babel', 'mochaTest', 'esdoc', 'webpack', 'uglify', 'compress', 'copy']);
     grunt.registerTask('default', ['dist']);
 };

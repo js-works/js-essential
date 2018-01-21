@@ -22,18 +22,19 @@ export default class Seq {
         return 'Seq/instance';
     }
 
-    /* develblock:start */
+    /* strip-block:start */
     [Symbol.iterator]() {
-        // Will be overridden below - only there for API documentation
-        // tool esdoc, to indicate in the API docs that class Seq
+        // Will be overridden later - only there for the API documentation
+        // tool "esdoc", to indicate in the API docs that class Seq
         // is iterable.
         // Symbol.iterator needs a polyfill for non-ES2015 browsers,
-        // that's why that block will be stripped by webpack later.
-        // This Seq implementation shall work completely without
-        // any ES2015 polyfills and also without any other modules or
-        // source files.
+        // that's why that block will be stripped later by webpack loader
+        // "webpack-strip-block".
+        // This Seq implementation shall work completely independent,
+        // means without any ES2015 polyfills and also without any
+        // other modules or source files.
     }
-    /* develblock:end */
+    /* strip-block:end */
 
     /**
      * Maps each value of the seq
@@ -473,6 +474,7 @@ Seq.prototype[iteratorSymbol] = function () {
     let done = false;
 
     return {
+        // TODO - what about first argument of function 'next'?!?
         next() {
             if (done) {
                 return { value: undefined, done: true};
@@ -483,6 +485,7 @@ Seq.prototype[iteratorSymbol] = function () {
             try {
                 item = generate();
             } catch(e) {
+                done = true;
                 finalize();
                 throw e;
             }
@@ -495,7 +498,16 @@ Seq.prototype[iteratorSymbol] = function () {
             return item === endOfSeq
                 ? { value: undefined, done: true }
                 : { value: item, done: false };
+        },
+        /* TODO - implement functions 'throw' and 'return
+        throw(e) {
+            // TODO
+        },
+        return(value) {
+            // TODO
         }
+
+        */
     };
 };
 
@@ -514,7 +526,7 @@ function iterate(seq) {
     } else {
         const result = seq.__generator();
         
-        if (Array.isArray(result)) {
+        if (result instanceof Array) {
             const
                 next = result[0] || endSequencing,
                 finalize = result[1] || doNothing;
